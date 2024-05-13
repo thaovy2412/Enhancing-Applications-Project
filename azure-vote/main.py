@@ -32,7 +32,8 @@ config_integration.trace_integrations(['requests'])
 # TODO: Setup logger
 # Standard Logging
 logger = logging.getLogger(__name__)
-handler = AzureLogHandler(connection_string='InstrumentationKey=57a31e0a-72cd-4798-9081-eb76a8927580')
+handler = AzureLogHandler(
+    connection_string='InstrumentationKey=57a31e0a-72cd-4798-9081-eb76a8927580')
 handler.setFormatter(logging.Formatter('%(traceId)s %(spanId)s %(message)s'))
 logger.addHandler(handler)
 # Logging custom Events
@@ -61,7 +62,8 @@ app = Flask(__name__)
 # TODO: Setup flask middleware
 middleware = FlaskMiddleware(
     app,
-    exporter=AzureExporter(connection_string="InstrumentationKey=57a31e0a-72cd-4798-9081-eb76a8927580"),
+    exporter=AzureExporter(
+        connection_string="InstrumentationKey=57a31e0a-72cd-4798-9081-eb76a8927580"),
     sampler=ProbabilitySampler(rate=1.0)
 )
 
@@ -84,7 +86,19 @@ else:
     title = app.config['TITLE']
 
 # Redis Connection
-r = redis.Redis()
+# r = redis.Redis()
+# Redis configurations
+redis_server = os.environ['REDIS']
+
+# Redis Connection to another container
+try:
+    if "REDIS_PWD" in os.environ:
+        r = redis.StrictRedis(host=redis_server, port=6379, password=os.environ['REDIS_PWD'])
+    else:
+        r = redis.Redis(redis_server)
+    r.ping()
+except redis.ConnectionError:
+    exit('Failed to connect to Redis, terminating.')
 
 # Change title to host name to demo NLB
 if app.config['SHOWHOST'] == "true":
